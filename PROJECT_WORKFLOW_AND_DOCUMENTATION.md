@@ -1,7 +1,7 @@
 # SmartHire — Comprehensive Project Workflow & System Documentation
 
 ---
-
+a
 ## 1. Executive Summary
 **SmartHire** is an enterprise-grade recruitment and campus placement portal built using Jakarta EE (Servlets & JSP), MySQL, and native Java. The platform connects graduating students with hiring companies through an **Intelligent Skill-Weighted Matching Engine** that evaluates candidates based on mandatory skills, weighted nice-to-have skills, and academic CGPA thresholds.
 
