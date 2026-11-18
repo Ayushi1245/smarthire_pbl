@@ -1,112 +1,71 @@
 ---
-name: recruitment-platform
-description: Guidance for designing and building a rule-based (non-AI) recruitment platform in Java and MySQL, where students manage profiles and apply for jobs and recruiters post vacancies, review applicants and shortlist candidates. Use this skill whenever the user mentions the recruitment platform, job portal, placement portal, student/recruiter modules, job applications, applicant shortlisting, skill-match percentage, or the related database tables (users, student_profiles, skills, jobs, job_skills, applications, resumes), even if they do not say "recruitment platform" explicitly.
+name: smarthire
+description: Context, architecture, and coding conventions for SmartHire, a Java 17 / Jakarta Servlet + JSP / MySQL campus recruitment web app (students, recruiters, skill-matching engine). Use this skill whenever the user mentions SmartHire, their PBL project, the skill-matching or MatchService logic, resume upload or resume skill extraction, recruiter or student dashboards, or asks to add, fix, debug, test, or explain any feature in this codebase, even if they don't name the project explicitly.
 ---
 
-# Recruitment Platform (Rule-Based, No AI)
+# SmartHire
 
-## Objective
+SmartHire is a university campus recruitment web app. **Students** browse jobs and apply; **recruiters** post jobs and review applicants. Its signature feature is a skill-matching engine that scores a student's skills against a job's required skills.
 
-A web platform where **students** manage profiles and apply for jobs, and **recruiters** post vacancies, review applications, and shortlist eligible candidates. Matching is purely rule-based: no machine learning, LLMs, embeddings, or external AI APIs.
+## Tech stack
 
-## Modules
+- Java 17, Jakarta Servlet 6.0 + JSP, Maven (WAR), Tomcat 10.1+
+- MySQL 8.4 with raw JDBC (`PreparedStatement` only, no ORM)
+- BCrypt (jBCrypt 0.4) for passwords
+- JUnit Jupiter 5.10 for tests
+- Plain CSS design system in `css/style.css` (CSS variables)
 
-### Student
-- Register, log in
-- Create and update profile (education, skills, experience)
-- Upload and download resume (PDF)
-- Search and filter job listings
-- Apply for jobs and track application status
-
-### Recruiter
-- Register, log in
-- Create, edit, delete job postings
-- Set required skills and eligibility criteria (min CGPA, education, experience)
-- View applicants and their resumes
-- Shortlist or reject candidates
-
-### Admin (optional)
-- Manage users and recruiters
-- Monitor job postings
-- Remove inappropriate listings
-
-## Matching Logic
+## Project layout
 
 ```
-Match Score = (Matched Required Skills / Total Required Skills) x 100
+src/main/java/com/smarthire/
+  model/     POJOs: User, StudentProfile, RecruiterProfile, Job, Application, Skill, Resume
+  dao/       One DAO per entity (JDBC, PreparedStatement)
+  service/   MatchService (skill matching engine)
+  servlet/   HTTP controllers, routed with @WebServlet annotations
+  filter/    AuthFilter (@WebFilter("/*"), auth + role checks)
+  util/      DBConnection, DatabaseUtil
+src/main/webapp/WEB-INF/jsp/   login, register, common/, student/, recruiter/
+database/    schema.sql (8 tables), seed_data.sql
 ```
 
-Example: job requires Java, SQL, OOP, DBMS.
+Tables: `users`, `student_profiles`, `recruiter_profiles`, `skills`, `student_skills`, `jobs`, `job_skills` (has `is_mandatory`, `weight`), `applications` (has `match_score`, status), `resumes`.
 
-| Candidate | Matching skills | Score |
-|-----------|-----------------|-------|
-| A | Java, SQL, OOP, DBMS | 100% |
-| B | Java, SQL | 50% |
-| C | Java, OOP, DBMS | 75% |
+## Matching engine (`MatchService`)
 
-Rules to follow:
-1. **Normalize skills** (trim, lowercase) before comparing. Prefer picking from the `skills` master table over free text.
-2. **Hard filters vs. soft score.** Min CGPA, education, and experience are pass/fail eligibility filters. Skills produce the score. An applicant who fails a hard filter is flagged as ineligible, never ranked as a top match.
-3. **Sort applicants** by score descending, with ties broken by CGPA.
-4. **Optional weighting:** add `is_mandatory` or `weight` to `job_skills`; score = matched weight / total weight.
-5. Guard against a job with zero required skills (avoid divide-by-zero).
-6. Keep the logic in one pure class, `MatchService.calculate(job, student)`, with no database or web dependencies, so it is easy to unit test.
+```
+score = (matched_skills / total_job_skills) x 100
+```
 
-## Technology Stack
+- Lowercase and trim all skills, de-duplicate both sets.
+- Job with no required skills gives 100; student with no skills gives 0.
+- Returns a `MatchResult`: score (0-100, 2 decimals), matched set, missing set.
+- Known gap: `job_skills.weight` and `is_mandatory` exist in the schema but are not used in the formula yet.
 
-- **Backend:** Java
-- **Frontend:** HTML, CSS, JavaScript (with form validation)
-- **Database:** MySQL
-- **Web layer, choose one and confirm with the user before generating code:**
-  - Java Servlets + JSP + JDBC: traditional, teaches fundamentals, more boilerplate.
-  - Spring Boot + Spring Security + JPA: less boilerplate, industry standard, steeper learning curve.
+## Conventions to follow when changing code
 
-## Database Tables
+1. **Routing**: use `@WebServlet` annotations, not `web.xml` routes.
+2. **Database**: every query uses `PreparedStatement` with parameters. Never concatenate user input into SQL. Use explicit transactions with rollback when several tables change together (see `SkillDAO.updateStudentSkills`).
+3. **Layering**: servlets handle HTTP and call DAOs or services. Put business logic in `service/`, SQL in `dao/`, markup in JSP.
+4. **JSPs** live under `WEB-INF/jsp/` and are reached only through servlets. Reuse `common/header.jsp` and `common/footer.jsp`. `job_form.jsp` is shared by create and edit.
+5. **Auth**: `/student/*` requires role `STUDENT`, `/recruiter/*` requires `RECRUITER`. New protected routes must fit these prefixes so `AuthFilter` covers them. Check ownership (for example `recruiter_id` matches the session user) on edit and review actions.
+6. **Skills**: compare case-insensitively (`LOWER()`), and reuse `insertIfNotExists()` for custom skills.
+7. **Resumes**: only PDF/.doc/.docx, max 5 MB, UUID stored names. Students access only their own; recruiters can download any applicant's.
+8. **Configuration**: DB and upload settings come from environment variables (`DB_URL`, `DB_USER`, `DB_PASSWORD`, `SMARTHIRE_UPLOAD_DIR`). Never hardcode credentials in source or in this file.
+9. **Tests**: add JUnit tests next to existing ones (`MatchServiceTest`, `DBTest`, `SecurityTest`) for any new logic.
 
-| Table | Purpose |
-|-------|---------|
-| `users` | Login credentials (hashed password) and role (STUDENT, RECRUITER, ADMIN) |
-| `student_profiles` | Student details, CGPA, summary |
-| `education` | Multiple education entries per student |
-| `experience` | Multiple experience entries per student |
-| `companies` | Recruiter/company details |
-| `skills` | Master list of skills |
-| `student_skills` | Student-to-skill mapping |
-| `jobs` | Job details and eligibility (min CGPA, education, experience) |
-| `job_skills` | Required skills per job (optional weight/mandatory flag) |
-| `applications` | Student applications and status |
-| `resumes` | Resume file references (path, original name, upload time) |
+## Planned feature: resume storage and skill extraction
 
-Constraints to include:
-- Unique `(student_id, job_id)` on `applications` to block duplicate applications.
-- Unique `(student_id, skill_id)` and `(job_id, skill_id)` on the mapping tables.
-- Foreign keys with sensible `ON DELETE` behavior (deleting a job should remove its `job_skills`).
+The user wants to store resumes in the database and extract skills from them for matching. Preferred approach:
 
-## Application Status Lifecycle
+1. Store file bytes in a `LONGBLOB` column (stream with `setBinaryStream` / `getBinaryStream`; check MySQL `max_allowed_packet`), plus the extracted text.
+2. Extract text with Apache PDFBox (PDF) and Apache POI (.docx), or Apache Tika.
+3. Match the text against the `skills` table using word-boundary matching so "Java" does not match "JavaScript". Handle short names (C, R) carefully.
+4. Support aliases (js, springboot, postgres, ML) via a `skill_aliases` table.
+5. Show detected skills to the student as suggestions and save only after confirmation.
 
-`APPLIED -> UNDER_REVIEW -> SHORTLISTED` or `REJECTED`
+## Working style for this project
 
-Only recruiters who own the job may change the status. Students can view but not edit it.
-
-## Security and Quality Checklist
-
-- Hash passwords with BCrypt; never store plain text.
-- Use `PreparedStatement` (or JPA parameters) for every query to prevent SQL injection.
-- Enforce role checks on every protected URL (a student must not reach recruiter pages, and a recruiter must not edit another recruiter's job).
-- Resume upload: accept PDF only, limit file size, rename files to unique names, store on disk and keep only the path in the database.
-- Validate input on both client (JavaScript) and server.
-- Use sessions or tokens correctly; invalidate on logout.
-
-## Suggested Work Split (4 people)
-
-1. Auth, roles, and admin module
-2. Student module (profile, education, skills, resume upload)
-3. Recruiter module (job CRUD, applicant review screen)
-4. Job search/filter, application flow, and the matching engine
-
-## Workflow When Using This Skill
-
-1. Confirm the web-layer choice (Servlets/JSP or Spring Boot) if not already decided.
-2. Start with the schema, then the `MatchService` with unit tests, then modules in the order: auth, job CRUD, profile, apply, applicant review.
-3. Seed the database with sample students, jobs, and skills so matching can be demoed immediately.
-4. When generating code, keep the matching logic free of web and database dependencies.
+- Explain design choices briefly; this is a student group project and the code should stay readable and explainable in a review.
+- Prefer small, testable changes that fit the existing structure over introducing frameworks.
+- Flag security issues (CSRF, file validation, credentials) when they come up.

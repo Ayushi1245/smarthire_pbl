@@ -1,4 +1,3 @@
-com/smarthire/servlet/StudentJobsServlet.class
 com/smarthire/util/DBConnection.class
 com/smarthire/servlet/RecruiterProfileServlet.class
 com/smarthire/servlet/LoginServlet.class
@@ -11,7 +10,6 @@ com/smarthire/model/Application.class
 com/smarthire/dao/UserDAO.class
 com/smarthire/model/RecruiterProfile.class
 com/smarthire/servlet/StudentDashboardServlet.class
-com/smarthire/service/MatchService.class
 com/smarthire/servlet/StudentProfileServlet.class
 com/smarthire/servlet/ApplicantReviewServlet.class
 com/smarthire/servlet/ResumeServlet.class
@@ -27,9 +25,7 @@ com/smarthire/dao/ResumeDAO.class
 com/smarthire/model/Resume.class
 com/smarthire/model/User.class
 com/smarthire/dao/StudentProfileDAO.class
-com/smarthire/servlet/StudentApplyServlet.class
 com/smarthire/model/StudentProfile.class
-com/smarthire/service/MatchService$MatchResult.class
 com/smarthire/servlet/JobCreateServlet.class
 com/smarthire/filter/AuthFilter.class
 com/smarthire/model/Job.class

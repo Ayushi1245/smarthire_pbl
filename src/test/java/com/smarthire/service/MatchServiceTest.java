@@ -10,7 +10,15 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("MatchService Algorithm Tests")
+/**
+ * Unit tests for the legacy {@code calculateMatch(List<String>, List<String>)} API
+ * in {@link MatchService}.
+ *
+ * <p>All expected scores are expressed as a fraction of the 70-point skill
+ * component (i.e., max attainable score via the string-list API is 70.0,
+ * since CGPA component is reserved for future use).</p>
+ */
+@DisplayName("MatchService Algorithm Tests (legacy String-list API)")
 class MatchServiceTest {
 
     private MatchService matchService;
@@ -21,7 +29,7 @@ class MatchServiceTest {
     }
 
     @Test
-    @DisplayName("Should return 100% when all required job skills are present in student skills")
+    @DisplayName("Should return 70.0 when all required job skills are present in student skills")
     void testExactAndCompleteMatch() {
         List<String> studentSkills = Arrays.asList("Java", "MySQL", "Spring", "Git");
         List<String> jobSkills = Arrays.asList("Java", "MySQL", "Git");
@@ -29,7 +37,7 @@ class MatchServiceTest {
         MatchService.MatchResult result = matchService.calculateMatch(studentSkills, jobSkills);
 
         assertNotNull(result);
-        assertEquals(100.0, result.getScore(), 0.001);
+        assertEquals(70.0, result.getScore(), 0.001);
         assertEquals(3, result.getMatchedSkills().size());
         assertTrue(result.getMissingSkills().isEmpty());
     }
@@ -42,7 +50,7 @@ class MatchServiceTest {
 
         MatchService.MatchResult result = matchService.calculateMatch(studentSkills, jobSkills);
 
-        assertEquals(100.0, result.getScore(), 0.001);
+        assertEquals(70.0, result.getScore(), 0.001);
         assertEquals(3, result.getMatchedSkills().size());
         assertTrue(result.getMissingSkills().isEmpty());
     }
@@ -55,8 +63,8 @@ class MatchServiceTest {
 
         MatchService.MatchResult result = matchService.calculateMatch(studentSkills, jobSkills);
 
-        // 2 out of 4 skills matched = 50.0%
-        assertEquals(50.0, result.getScore(), 0.001);
+        // 2 out of 4 skills matched = (2/4) * 70 = 35.0
+        assertEquals(35.0, result.getScore(), 0.001);
         assertEquals(2, result.getMatchedSkills().size());
         assertEquals(2, result.getMissingSkills().size());
         assertTrue(result.getMissingSkills().contains("css"));
@@ -64,7 +72,7 @@ class MatchServiceTest {
     }
 
     @Test
-    @DisplayName("Should return 0% when there is no skill overlap")
+    @DisplayName("Should return 0.0 when there is no skill overlap")
     void testZeroMatch() {
         List<String> studentSkills = Arrays.asList("PHP", "Laravel");
         List<String> jobSkills = Arrays.asList("Python", "Django", "PostgreSQL");
@@ -90,15 +98,15 @@ class MatchServiceTest {
     }
 
     @Test
-    @DisplayName("Should return 100% when job has no required skills")
+    @DisplayName("Should return 70.0 when job has no required skills")
     void testEmptyJobRequirements() {
         List<String> studentSkills = Arrays.asList("Java", "SQL");
 
         MatchService.MatchResult resultWithEmpty = matchService.calculateMatch(studentSkills, Collections.emptyList());
-        assertEquals(100.0, resultWithEmpty.getScore(), 0.001);
+        assertEquals(70.0, resultWithEmpty.getScore(), 0.001);
 
-        MatchService.MatchResult resultWithNull = matchService.calculateMatch(studentSkills, null);
-        assertEquals(100.0, resultWithNull.getScore(), 0.001);
+        MatchService.MatchResult resultWithNull = matchService.calculateMatch(studentSkills, (List<String>) null);
+        assertEquals(70.0, resultWithNull.getScore(), 0.001);
     }
 
     @Test
@@ -109,8 +117,8 @@ class MatchServiceTest {
 
         MatchService.MatchResult result = matchService.calculateMatch(studentSkills, jobSkills);
 
-        // Required unique: java, spring (2). Student has both (2).
-        assertEquals(100.0, result.getScore(), 0.001);
+        // Required unique: java, spring (2). Student has both. (2/2) * 70 = 70.0
+        assertEquals(70.0, result.getScore(), 0.001);
         assertEquals(2, result.getMatchedSkills().size());
         assertEquals(0, result.getMissingSkills().size());
     }

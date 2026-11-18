@@ -22,6 +22,7 @@
 /Users/ayushi/Documents/pbl/src/main/java/com/smarthire/util/DatabaseUtil.java
 /Users/ayushi/Documents/pbl/src/main/java/com/smarthire/servlet/StudentJobsServlet.java
 /Users/ayushi/Documents/pbl/src/main/java/com/smarthire/dao/UserDAO.java
+/Users/ayushi/Documents/pbl/src/main/java/com/smarthire/model/JobSkill.java
 /Users/ayushi/Documents/pbl/src/main/java/com/smarthire/servlet/JobEditServlet.java
 /Users/ayushi/Documents/pbl/src/main/java/com/smarthire/servlet/StudentDashboardServlet.java
 /Users/ayushi/Documents/pbl/src/main/java/com/smarthire/servlet/LoginServlet.java
